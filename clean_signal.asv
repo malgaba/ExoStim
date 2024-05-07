@@ -1,0 +1,50 @@
+% Code to clean artifacts from the signal
+% Aplicar un filtro mediano para suavizar la señal y preservar los picos
+folder = '/Users/neuralrehabilitationgroup/PycharmProjects/DATA_ExoStim/DATA/gait_without_exo/PROCESSED/SUBJECT_0X/SESSION_01/IRREGULAR_TERRAIN/EMG/FILTERED';
+files = dir(fullfile(folder,'*.csv'))
+
+for i = 1:numel(files)
+    name_file = fullfile(folder, files(i).name)
+    original_emg = readtable(name_file);
+    filtered_emg = medfilt1(original_emg, 11); % Aplicar filtro mediano con ventana de 11 muestras
+
+    % Calcular el umbral adaptativo como un múltiplo de la desviación estándar
+    threshold_factor = 3; % Factor de umbral
+    threshold = threshold_factor * std(filtered_emg);
+    
+    % Detectar y eliminar los picos que superan el umbral
+    cleaned_emg = filtered_emg;
+    cleaned_emg(abs(filtered_emg) > threshold) = 0;
+
+    cleaned_signal = [];
+    
+    % Graficar la señal original y la señal limpiada
+    for c=2:size(muscles,2)
+        m = muscles{1,c};
+        original_emg = raw_emg.(m);
+        filtered_emg = medfilt1(original_emg, 11);
+    
+        threshold_factor = 3; % Factor de umbral
+        threshold = threshold_factor * std(filtered_emg);
+    
+        %Detectar y eliminar los picos que superan el umbral
+        cleaned_emg = filtered_emg;
+        cleaned_emg(abs(filtered_emg) > threshold) = 0;
+    
+    
+        figure;
+        % plot(raw_emg.time, original_emg, 'b', 'LineWidth', 1.5);
+        % hold on;
+        plot(raw_emg.time, cleaned_emg, 'r', 'LineWidth', 1.5);
+        xlabel('Tiempo (s)');
+        ylabel('Amplitud');
+        title(strcat('Cleaned ',m));
+        grid on;
+        xline(events, 'g--', 'LineWidth', 2)
+        legend('Original EMG', 'Cleaned EMG');
+        savefig(gcf,strcat(m,'_',num2str(subject),'_cleaned.fig'))
+    
+        cleaned_signal = addvars(cleaned_signal,cleaned_emg,'NewVariableNames',m);
+    end
+    writetable(cleaned_signal, strcat(name_file))
+end
