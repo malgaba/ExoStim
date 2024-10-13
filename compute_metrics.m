@@ -1,4 +1,4 @@
-cond = 'WITH_EXO';
+cond = 'WITHOUT_EXO';
 folder_in = strcat('/Users/neuralrehabilitationgroup/PycharmProjects/DATA_ExoStim/EXOSTIM_DATA/GAIT_',cond,'/PROCESSED/ENVELOPE');
 folder_out = '/Users/neuralrehabilitationgroup/PycharmProjects/DATA_ExoStim/EXOSTIM_DATA/NEW_RESULTS/';
 
@@ -28,28 +28,30 @@ for i = 1:numel(files)
     
         rms_values = [];
         mav_values = [];
-        mnf_values = [];
-        mdf_values = [];
+        % mnf_values = [];
+        % mdf_values = [];
         activation_ranges = [];
 
         for s=1:size(data,2)    
             % Root Mean Square
             signal = data(:,s);
+            signal = signal*1000; %Pasar a mV
             rms_value = sqrt(mean(signal.^2));
             rms_values = [rms_values, rms_value];
 
+
             % Mean Absolute Value
-            mav_value = mean(signal);
+            mav_value = mean(abs(signal));
             mav_values = [mav_values, mav_value];
 
             % Mean Frequency y median frequency (los ciclos son demasiado cortos para calcular
             % MNF y MDF con ventana)
-            [Pxx, F] = pburg(signal, order, length(signal), fs);
-            mnf_value = meanfreq(Pxx, F);
-            mdf_value = medfreq(Pxx, F);
-
-            mnf_values = [mnf_values, mnf_value];
-            mdf_values = [mdf_values, mdf_value];
+            % [Pxx, F] = pburg(signal, order, length(signal), fs);
+            % mnf_value = meanfreq(Pxx, F);
+            % mdf_value = medfreq(Pxx, F);
+            % 
+            % mnf_values = [mnf_values, mnf_value];
+            % mdf_values = [mdf_values, mdf_value];
 
             activation_range = max(signal) - min(signal);
             activation_ranges = [activation_ranges, activation_range];
@@ -59,10 +61,13 @@ for i = 1:numel(files)
 
        
         temp_table = addvars(temp_table, mean(rms_values, 'omitnan'), 'NewVariableNames','RMS');
+        temp_table = addvars(temp_table, std(rms_values, 'omitnan'), 'NewVariableNames','STD_RMS');
         temp_table = addvars(temp_table, mean(mav_values, 'omitnan'), 'NewVariableNames','MAV');
-        temp_table = addvars(temp_table, mean(mnf_values, 'omitnan'), 'NewVariableNames','MNF');
-        temp_table = addvars(temp_table, mean(mdf_values, 'omitnan'), 'NewVariableNames','MDF');
+        temp_table = addvars(temp_table, std(mav_values, 'omitnan'), 'NewVariableNames','STD_MAV');
+        % temp_table = addvars(temp_table, mean(mnf_values, 'omitnan'), 'NewVariableNames','MNF');
+        % temp_table = addvars(temp_table, mean(mdf_values, 'omitnan'), 'NewVariableNames','MDF');
         temp_table = addvars(temp_table, mean(activation_ranges, 'omitnan'), 'NewVariableNames','Range of activation');
+        temp_table = addvars(temp_table, std(activation_ranges, 'omitnan'), 'NewVariableNames','STD_Range of activation');
     
         results = vertcat(results,temp_table);
     end
@@ -102,19 +107,23 @@ for i = 1:numel(files_iEMG)
             data = data.data;
         end
 
+        data = data * 1000; % Pasamos a mV
+
         temp_table_2 = table();
         % temp_table = addvars(temp_table, string(nombre_archivo), 'NewVariableNames','Trial');
 
         iEMGs = [];
         for s=1:size(data,2)    
-            % Root Mean Square
             signal = data(:,s);
             rectified_signal = abs(signal);
+            % iEMG = sum(abs(signal))/length(signal); %mV/s
             iEMG = trapz(t, rectified_signal);
+            
             iEMGs = [iEMGs iEMG];
 
         end
         temp_table_2 = addvars(temp_table_2, mean(iEMGs, 'omitnan'), 'NewVariableNames','iEMG');
+        temp_table_2 = addvars(temp_table_2, std(iEMGs, 'omitnan'), 'NewVariableNames','STD_iEMG');
         results_2 = vertcat(results_2,temp_table_2);
 
     end
