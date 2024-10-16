@@ -1,6 +1,6 @@
-cond = 'WITHOUT_EXO';
+cond = 'WITH_EXO';
 folder_in = strcat('/Users/neuralrehabilitationgroup/PycharmProjects/DATA_ExoStim/EXOSTIM_DATA/GAIT_',cond,'/PROCESSED/ENVELOPE');
-folder_out = '/Users/neuralrehabilitationgroup/PycharmProjects/DATA_ExoStim/EXOSTIM_DATA/NEW_RESULTS/';
+folder_out = strcat('/Users/neuralrehabilitationgroup/PycharmProjects/DATA_ExoStim/EXOSTIM_DATA/GAIT_',cond,'/PROCESSED/RESULTS/');
 
 
 files = dir(fullfile(folder_in,'*mat'));
@@ -35,15 +35,20 @@ for i = 1:numel(files)
         for s=1:size(data,2)    
             % Root Mean Square
             signal = data(:,s);
-            signal = signal*1000; %Pasar a mV
-            rms_value = sqrt(mean(signal.^2));
+            % signal = signal*1000; %Pasar a mV
+            % rms_value = sqrt(mean(signal.^2));
+
+            rms_value = rms(signal);
             rms_values = [rms_values, rms_value];
+
+            
 
 
             % Mean Absolute Value
             mav_value = mean(abs(signal));
             mav_values = [mav_values, mav_value];
 
+          
             % Mean Frequency y median frequency (los ciclos son demasiado cortos para calcular
             % MNF y MDF con ventana)
             % [Pxx, F] = pburg(signal, order, length(signal), fs);
@@ -58,6 +63,11 @@ for i = 1:numel(files)
 
            
         end
+        
+        writematrix(rms_values', strcat(folder_out,strrep(files(i).name,'normalized.mat','RMS.csv')));
+        writematrix(mav_values', strcat(folder_out,strrep(files(i).name,'normalized.mat','MAV.csv')));
+        writematrix(activation_ranges', strcat(folder_out,strrep(files(i).name,'normalized.mat','RANGE.csv')));
+
 
        
         temp_table = addvars(temp_table, mean(rms_values, 'omitnan'), 'NewVariableNames','RMS');
@@ -89,6 +99,7 @@ t = (0:n_samples-1) / fs;
 results_2 = table();
 
 for i = 1:numel(files_iEMG)
+    % Porque el iEMG no se saca del envelope, sino de la señal normal
     if ~contains(files_iEMG(i).name,'normalized')
         name_file = fullfile(folder_in_iEMG, files_iEMG(i).name);
         [~, nombre_archivo, ~] = fileparts(name_file)
@@ -109,6 +120,15 @@ for i = 1:numel(files_iEMG)
 
         data = data * 1000; % Pasamos a mV
 
+        % EMG data normalized by the average of its peaks from all cycles
+        max_individual_cycles = [];
+        for j = 1:size(data,2)
+            max_individual_cycles(j) = max(data(:,j));
+        end
+
+        media = mean(max_individual_cycles);
+        data = data/media;
+
         temp_table_2 = table();
         % temp_table = addvars(temp_table, string(nombre_archivo), 'NewVariableNames','Trial');
 
@@ -122,6 +142,9 @@ for i = 1:numel(files_iEMG)
             iEMGs = [iEMGs iEMG];
 
         end
+
+        writematrix(iEMGs', strcat(folder_out,strrep(files(i).name,'.mat','_iEMG.csv')));
+
         temp_table_2 = addvars(temp_table_2, mean(iEMGs, 'omitnan'), 'NewVariableNames','iEMG');
         temp_table_2 = addvars(temp_table_2, std(iEMGs, 'omitnan'), 'NewVariableNames','STD_iEMG');
         results_2 = vertcat(results_2,temp_table_2);

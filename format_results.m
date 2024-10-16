@@ -1,6 +1,6 @@
 % Cargar datos del archivo CSV
 cond = 'WITH_EXO';
-folder = strcat('/Users/neuralrehabilitationgroup/PycharmProjects/DATA_ExoStim/EXOSTIM_DATA/NEW_RESULTS/',cond,'/');
+folder = strcat('/Users/neuralrehabilitationgroup/PycharmProjects/DATA_ExoStim/EXOSTIM_DATA/GAIT_',cond,'/PROCESSED/RESULTS/');
 metrics_envelopes = readtable(strcat(folder,strcat('Metrics_envelopes_new_',cond,'.csv')), 'Delimiter',',');
 
 if strcmp(cond,'WITH_EXO')
